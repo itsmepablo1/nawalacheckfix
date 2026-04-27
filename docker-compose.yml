@@ -1,0 +1,53 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: nawala-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: nawala_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: nawala-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  web:
+    build: .
+    container_name: nawala-web
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@db:5432/nawala_db?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      AUTH_SECRET: "strong-secret"
+
+  worker:
+    build: .
+    container_name: nawala-worker
+    restart: always
+    command: [ "npx", "tsx", "src/workers/index.ts" ]
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@db:5432/nawala_db?schema=public"
+      REDIS_URL: "redis://redis:6379"
+
+volumes:
+  pgdata:
+  redisdata:

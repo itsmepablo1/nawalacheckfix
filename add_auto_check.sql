@@ -1,0 +1,1 @@
+ALTER TABLE "TelegramSettings" ADD COLUMN IF NOT EXISTS auto_check BOOLEAN DEFAULT false;

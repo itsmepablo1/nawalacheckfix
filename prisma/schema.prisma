@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  password_hash String
+  role          String   @default("ADMIN") // MASTER, SUPER_ADMIN, ADMIN
+  createdAt     DateTime @default(now())
+}
+
+model Domain {
+  id         String        @id @default(cuid())
+  domain     String        @unique
+  group_name String?
+  is_active  Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  checks     CheckResult[]
+}
+
+model Provider {
+  id           String             @id @default(cuid())
+  key          String             @unique // FIRSTMEDIA, INDOSAT, SMARTFREN, AXIS_XL, INDIHOME, BIZNET, TELKOMSEL, KOMINFO
+  name         String
+  is_active    Boolean            @default(true)
+  proxy_url    String?
+  dns_server   String?            // e.g. "118.98.44.10" for DNS-based checking
+  check_method String             @default("HTTP") // HTTP | DNS
+  heartbeat    ProviderHeartbeat?
+  checks       CheckResult[]
+}
+
+model ProviderHeartbeat {
+  provider_id String   @id
+  status      String   @default("DOWN") // RUNNING, DOWN
+  last_seen   DateTime @default(now())
+  provider    Provider @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+}
+
+model CheckResult {
+  id           String   @id @default(cuid())
+  domain_id    String
+  provider_key String
+  status       String   @default("WAITING") // WAITING, AMAN, BLOCKIR, REDIRECT, TIMEOUT
+  http_status  Int?
+  final_url    String?
+  latency_ms   Int?
+  error_code   String?
+  checked_at   DateTime @default(now())
+
+  domain   Domain   @relation(fields: [domain_id], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [provider_key], references: [key], onDelete: Cascade)
+
+  @@index([domain_id])
+  @@index([provider_key])
+  @@index([status])
+}
+
+model TelegramSettings {
+  id                  String  @id @default(cuid())
+  bot_token_encrypted String?
+  destinations        String? // JSON array of chat ids like ["-10012345678", "987654321"]
+  webhook_url         String?
+  mode                String  @default("blocked_only") // blocked_only, full
+  send_on_change_only Boolean @default(true)
+  enabled             Boolean @default(false)
+  auto_check          Boolean @default(false)
+}
+
+model TelegramReportsLog {
+  id                     String   @id @default(cuid())
+  provider_key           String   @unique
+  last_hash_per_provider String? // A hash of the blocked domains payload to detect state changes
+  last_sent_at           DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  admin_id  String?
+  action    String
+  details   String? // JSON string
+  createdAt DateTime @default(now())
+}

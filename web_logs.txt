@@ -1,0 +1,200 @@
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6484e8ed._.js:1:1823) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at async Module.L (.next/server/chunks/ssr/_6de53e86._.js:1:1886) {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames
+nawala-web  | ⨯ Error: ENOENT: no such file or directory, open '/app/.next/required-server-files.json'
+nawala-web  |     at ignore-listed frames {
+nawala-web  |   errno: -2,
+nawala-web  |   code: 'ENOENT',
+nawala-web  |   syscall: 'open',
+nawala-web  |   path: '/app/.next/required-server-files.json'
+nawala-web  | }
+nawala-web  | ⨯ Error: Failed to load static file for page: /500 ENOENT: no such file or directory, open '/app/.next/server/pages/500.html'
+nawala-web  |     at ignore-listed frames

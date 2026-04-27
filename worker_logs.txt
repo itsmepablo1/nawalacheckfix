@@ -1,0 +1,5 @@
+nawala-worker  | 🚀 Background Workers started processing queues...
+nawala-worker  | [Checker] Dispatching all domains for check.
+nawala-worker  | [Telegram] Generating report for cycle starting at 2026-02-22T09:49:39.890Z
+nawala-worker  | [Checker] Dispatching all domains for check.
+nawala-worker  | [Telegram] Generating report for cycle starting at 2026-02-22T09:53:57.442Z

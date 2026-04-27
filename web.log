@@ -1,0 +1,7 @@
+time="2026-02-22T13:23:26+07:00" level=warning msg="D:\\nawala V1\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+nawala-web  | Γû▓ Next.js 16.1.6
+nawala-web  | - Local:         http://localhost:3000
+nawala-web  | - Network:       http://0.0.0.0:3000
+nawala-web  | 
+nawala-web  | Γ£ô Starting...
+nawala-web  | Γ£ô Ready in 48ms
