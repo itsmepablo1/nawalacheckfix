@@ -29,6 +29,16 @@ const KNOWN_BLOCK_IPS = new Set([
     // Common Internet Positif IPs
     "180.250.113.10",
     "203.130.196.155",
+    // Smartfren block page IPs
+    "202.67.41.4",
+    "202.67.41.5",
+    "219.83.120.11",
+    // Indosat Ooredoo block page
+    "202.152.1.1",
+    "202.152.0.1",
+    // XL / AXIS block page
+    "103.28.17.2",
+    "112.215.175.2",
 ]);
 
 // Reference DNS to compare against (Google Public DNS — unfiltered)
@@ -160,7 +170,16 @@ export async function checkDomainDNS(
             // IPs are completely different — check if ISP IPs are in a private/suspicious range
             // or are known block page subnets (36.86.x.x = Telkom block page range)
             const suspiciousIp = ispResult.ips.find((ip) => {
-                return ip.startsWith("36.86.") || ip.startsWith("180.131.") || ip.startsWith("118.98.44.");
+                return (
+                    ip.startsWith("36.86.")    ||  // Telkom block page
+                    ip.startsWith("180.131.")  ||  // Nawala
+                    ip.startsWith("118.98.44.") || // Telkom Internet Sehat
+                    ip.startsWith("202.67.")   ||  // Smartfren block page
+                    ip.startsWith("219.83.")   ||  // Smartfren block page
+                    ip.startsWith("202.152.")  ||  // Indosat block page
+                    ip.startsWith("103.28.")   ||  // XL block page
+                    ip.startsWith("112.215.")       // XL/AXIS block page
+                );
             });
 
             if (suspiciousIp) {
@@ -212,5 +231,11 @@ export const ISP_DNS_PRESETS: Record<string, { primary: string; secondary?: stri
     BIZNET:       { primary: "180.131.144.144",                            note: "Biznet — coba Nawala; fallback ke 118.98.44.10 jika timeout" },
     FIRSTMEDIA:   { primary: "103.12.160.2",                               note: "First Media DNS" },
     MYREPUBLIC:   { primary: "202.152.2.2",                                note: "MyRepublic DNS" },
-    TELKOMSEL:    { primary: "8.8.8.8",                                    note: "Telkomsel pakai DPI bukan DNS — gunakan HTTP check" },
+    TELKOMSEL:    { primary: "8.8.8.8",                                    note: "Telkomsel pakai DPI bukan DNS — gunakan HTTP check dengan proxy Telkomsel" },
+    // Operator seluler — DNS checking dari server eksternal
+    SMARTFREN:    { primary: "202.67.41.4",   secondary: "202.67.41.5",   note: "Smartfren DNS — deteksi blokir via DNS hijacking dari server eksternal" },
+    INDOSAT:      { primary: "202.152.0.1",   secondary: "202.152.0.2",   note: "Indosat Ooredoo DNS" },
+    XL:           { primary: "202.152.0.2",                                note: "XL Axiata DNS" },
+    AXIS:         { primary: "202.152.0.2",                                note: "AXIS (XL Group) DNS" },
+    TRI:          { primary: "8.8.8.8",                                    note: "Tri / Hutchison tidak punya DNS publik — gunakan metode INDIWTF untuk akurasi penuh" },
 };

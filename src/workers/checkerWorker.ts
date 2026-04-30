@@ -44,6 +44,10 @@ export const checkerWorker = new Worker(
                             check_method: provider.check_method || "HTTP",
                             proxy_url: provider.proxy_url,
                             dns_server: provider.dns_server,
+                            dns_server_secondary: (provider as any).dns_server_secondary ?? null,
+                            apn_host: (provider as any).apn_host ?? null,
+                            mmsc_url: (provider as any).mmsc_url ?? null,
+                            indiwtf_token: process.env.INDIWTF_API_TOKEN ?? null,
                             timestamp: timestamp.toISOString()
                         }
                     });
@@ -68,13 +72,18 @@ export const checkerWorker = new Worker(
         }
 
         if (job.name === "check-domain") {
-            const { domain_id, domain_name, provider_key, check_method, proxy_url, dns_server, timestamp } = job.data;
+            const { domain_id, domain_name, provider_key, check_method, proxy_url, dns_server, dns_server_secondary, apn_host, mmsc_url, indiwtf_token, timestamp } = job.data;
 
             const result = await checkDomain(
                 domain_name,
                 check_method || "HTTP",
                 proxy_url,
-                dns_server
+                dns_server,
+                undefined, // use default timeout
+                apn_host,
+                mmsc_url,
+                dns_server_secondary,
+                indiwtf_token ?? process.env.INDIWTF_API_TOKEN,
             );
 
             // Save to DB

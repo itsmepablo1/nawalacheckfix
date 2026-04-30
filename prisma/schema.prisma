@@ -27,15 +27,18 @@ model Domain {
 }
 
 model Provider {
-  id           String             @id @default(cuid())
-  key          String             @unique // FIRSTMEDIA, INDOSAT, SMARTFREN, AXIS_XL, INDIHOME, BIZNET, TELKOMSEL, KOMINFO
-  name         String
-  is_active    Boolean            @default(true)
-  proxy_url    String?
-  dns_server   String?            // e.g. "118.98.44.10" for DNS-based checking
-  check_method String             @default("HTTP") // HTTP | DNS
-  heartbeat    ProviderHeartbeat?
-  checks       CheckResult[]
+  id                   String             @id @default(cuid())
+  key                  String             @unique // FIRSTMEDIA, INDOSAT, SMARTFREN, AXIS_XL, INDIHOME, BIZNET, TELKOMSEL, KOMINFO
+  name                 String
+  is_active            Boolean            @default(true)
+  proxy_url            String?
+  dns_server           String?            // Primary DNS server, e.g. "118.98.44.10"
+  dns_server_secondary String?            // Fallback DNS if primary times out, e.g. "202.67.41.5"
+  check_method         String             @default("HTTP") // HTTP | DNS | APN | MMSC
+  apn_host             String?            // e.g. "internet" or "gprs.telkomsel.com" for APN-based checking
+  mmsc_url             String?            // e.g. "http://mms.telkomsel.com" for MMSC-based checking
+  heartbeat            ProviderHeartbeat?
+  checks               CheckResult[]
 }
 
 model ProviderHeartbeat {

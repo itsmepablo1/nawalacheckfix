@@ -132,15 +132,17 @@ function ProviderStatusCard({
 
             {/* Method + config indicator */}
             <div className={`text-[11px] font-mono flex items-center gap-1.5 ${
-                provider.check_method === "DNS"
-                    ? (provider.dns_server ? "text-blue-400/80" : "text-neutral-600")
-                    : (provider.proxy_url ? "text-amber-400/80" : "text-neutral-600")
+                provider.check_method === "DNS"  ? (provider.dns_server  ? "text-blue-400/80"   : "text-neutral-600") :
+                provider.check_method === "APN"  ? (provider.apn_host   ? "text-violet-400/80" : "text-neutral-600") :
+                provider.check_method === "MMSC" ? (provider.mmsc_url   ? "text-amber-400/80"  : "text-neutral-600") :
+                                                   (provider.proxy_url   ? "text-amber-400/80"  : "text-neutral-600")
             }`}>
                 <ShieldCheck className="w-3 h-3 shrink-0" />
                 <span className="truncate">
-                    {provider.check_method === "DNS"
-                        ? (provider.dns_server ? `DNS: ${provider.dns_server}` : "DNS: (belum diset)")
-                        : (provider.proxy_url ? provider.proxy_url : "Direct / No Proxy")}
+                    {provider.check_method === "DNS"  && (provider.dns_server ? `DNS: ${provider.dns_server}` : "DNS: (belum diset)")}
+                    {provider.check_method === "APN"  && (provider.apn_host   ? `APN: ${provider.apn_host}`   : "APN: (belum diset)")}
+                    {provider.check_method === "MMSC" && (provider.mmsc_url   ? `MMSC: ${provider.mmsc_url}`  : "MMSC: (belum diset)")}
+                    {provider.check_method === "HTTP" && (provider.proxy_url  ? provider.proxy_url             : "Direct / No Proxy")}
                 </span>
             </div>
         </div>
@@ -157,10 +159,39 @@ const DNS_PRESETS: Record<string, string> = {
     FIRSTMEDIA:   "103.12.160.2",
     MYREPUBLIC:   "202.152.2.2",
     TELKOMSEL:    "8.8.8.8",
+    // Operator seluler — DNS mereka bisa digunakan untuk deteksi blokir dari server eksternal
+    SMARTFREN:    "202.67.41.4",
+    INDOSAT:      "202.152.0.1",
+    XL:           "202.152.0.2",
+    AXIS:         "202.152.0.2",
+    TRI:          "8.8.8.8", // Tri tidak punya DNS publik — gunakan INDIWTF untuk akurasi
+};
+
+// ISP APN presets for quick-fill
+const APN_PRESETS: Record<string, string> = {
+    TELKOMSEL: "internet",
+    INDOSAT:   "indosatgprs",
+    XL:        "www.xlgprs.net",
+    AXIS:      "axis",
+    SMARTFREN: "internet",
+    TRI:       "3gprs",
+};
+
+// ISP MMSC presets for quick-fill
+const MMSC_PRESETS: Record<string, string> = {
+    TELKOMSEL: "http://mms.telkomsel.com",
+    INDOSAT:   "http://mmsc.indosat.com",
+    XL:        "http://mmc.xl.net.id/servlets/mms",
+    SMARTFREN: "http://10.1.1.1/onlinesmsgw",
+    TRI:       "http://mms.tri.co.id",
 };
 
 function AddProviderModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-    const [form, setForm] = useState({ key: "", name: "", proxy_url: "", dns_server: "", check_method: "HTTP" as "HTTP" | "DNS", is_active: true });
+    const [form, setForm] = useState({
+        key: "", name: "", proxy_url: "", dns_server: "", dns_server_secondary: "", apn_host: "", mmsc_url: "",
+        check_method: "HTTP" as "HTTP" | "DNS" | "APN" | "MMSC" | "INDIWTF",
+        is_active: true
+    });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
@@ -217,9 +248,11 @@ function AddProviderModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                                         ...p,
                                         key: s,
                                         name: p.name || s.charAt(0) + s.slice(1).toLowerCase(),
-                                        // Auto-fill DNS preset if available
+                                        // Auto-fill config presets based on ISP
                                         dns_server: p.dns_server || DNS_PRESETS[s] || "",
-                                        check_method: DNS_PRESETS[s] ? "DNS" : p.check_method,
+                                        apn_host: p.apn_host || APN_PRESETS[s] || "",
+                                        mmsc_url: p.mmsc_url || MMSC_PRESETS[s] || "",
+                                        check_method: DNS_PRESETS[s] ? "DNS" : APN_PRESETS[s] ? "APN" : p.check_method,
                                     }))}
                                     className="text-[10px] px-2 py-0.5 rounded border border-neutral-700 text-neutral-400 hover:border-emerald-500/40 hover:text-emerald-400 transition-colors font-mono"
                                 >{s}</button>
@@ -242,31 +275,50 @@ function AddProviderModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                     <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Metode Pengecekan</label>
                         <div className="grid grid-cols-2 gap-2">
-                            {(["HTTP", "DNS"] as const).map(m => (
+                            {([
+                                { value: "HTTP",     label: "🌐 HTTP / Proxy",     color: "emerald" },
+                                { value: "DNS",      label: "🔍 DNS Query",         color: "blue"    },
+                                { value: "APN",      label: "📶 APN Mobile",        color: "violet"  },
+                                { value: "MMSC",     label: "📨 MMSC Gateway",      color: "amber"   },
+                                { value: "INDIWTF",  label: "🛡️ indiwtf API",      color: "cyan"    },
+                            ] as const).map(m => (
                                 <button
-                                    key={m} type="button"
-                                    onClick={() => setForm(p => ({ ...p, check_method: m }))}
+                                    key={m.value} type="button"
+                                    onClick={() => setForm(p => ({ ...p, check_method: m.value }))}
                                     className={`py-2 rounded-xl border text-sm font-semibold transition-all ${
-                                        form.check_method === m
-                                            ? m === "DNS"
-                                                ? "bg-blue-500/15 border-blue-500/40 text-blue-400"
-                                                : "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                                        form.check_method === m.value
+                                            ? m.color === "emerald" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                                            : m.color === "blue"    ? "bg-blue-500/15 border-blue-500/40 text-blue-400"
+                                            : m.color === "violet"  ? "bg-violet-500/15 border-violet-500/40 text-violet-400"
+                                            : m.color === "amber"   ? "bg-amber-500/15 border-amber-500/40 text-amber-400"
+                                                                     : "bg-cyan-500/15 border-cyan-500/40 text-cyan-400"
                                             : "bg-neutral-950 border-neutral-800 text-neutral-500 hover:border-neutral-700"
                                     }`}
                                 >
-                                    {m === "HTTP" ? "🌐 HTTP / Proxy" : "🔍 DNS Query"}
+                                    {m.label}
                                 </button>
                             ))}
                         </div>
                         <p className="text-[10px] text-neutral-600">
-                            {form.check_method === "DNS"
-                                ? "Menggunakan DNS server ISP untuk mendeteksi blokir di level DNS."
-                                : "Menggunakan HTTP request melalui proxy untuk mendeteksi blokir."}
+                            {form.check_method === "DNS"     && "Menggunakan DNS server ISP untuk mendeteksi blokir di level DNS."}
+                            {form.check_method === "HTTP"    && "Menggunakan HTTP request melalui proxy untuk mendeteksi blokir."}
+                            {form.check_method === "APN"     && "Menggunakan APN jaringan seluler ISP untuk mendeteksi blokir mobile."}
+                            {form.check_method === "MMSC"    && "Menggunakan gateway MMSC operator untuk pengecekan koneksi MMS."}
+                            {form.check_method === "INDIWTF" && "✅ Paling akurat untuk ISP seluler — indiwtf.com punya server di dalam jaringan Telkomsel, XL, Indosat, Smartfren."}
                         </p>
                     </div>
 
+                    {/* indiwtf API info — no extra config needed */}
+                    {form.check_method === "INDIWTF" && (
+                        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
+                            <p className="text-xs font-semibold text-cyan-400">🛡️ indiwtf.com API — Tidak perlu konfigurasi tambahan</p>
+                            <p className="text-[11px] text-neutral-400">Token API sudah dikonfigurasi di server. Metode ini menggunakan infrastruktur real di dalam jaringan ISP Indonesia untuk akurasi ~99%.</p>
+                            <p className="text-[10px] text-neutral-600">Coverage: Telkomsel · IndiHome · XL · IM3 · Tri · Smartfren</p>
+                        </div>
+                    )}
+
                     {/* Conditional fields based on method */}
-                    {form.check_method === "HTTP" ? (
+                    {form.check_method === "HTTP" && (
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Proxy URL (opsional)</label>
                             <input
@@ -276,22 +328,82 @@ function AddProviderModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                                 className="w-full bg-neutral-950 border border-neutral-800 text-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-mono"
                             />
                         </div>
-                    ) : (
+                    )}
+
+                    {form.check_method === "DNS" && (
+                        <div className="space-y-3">
+                            {/* Primary DNS */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">DNS Server (Primer) *</label>
+                                <input
+                                    value={form.dns_server}
+                                    onChange={e => setForm(p => ({ ...p, dns_server: e.target.value }))}
+                                    placeholder="Contoh: 118.98.44.10"
+                                    className="w-full bg-neutral-950 border border-blue-500/30 text-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-mono"
+                                />
+                                {/* DNS Presets quick pick */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {Object.entries(DNS_PRESETS).map(([isp, ip]) => (
+                                        <button key={isp} type="button"
+                                            onClick={() => setForm(p => ({ ...p, dns_server: ip }))}
+                                            className="text-[10px] px-2 py-0.5 rounded border border-neutral-700 text-neutral-400 hover:border-blue-500/40 hover:text-blue-400 transition-colors font-mono"
+                                        >{isp}: {ip}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Secondary DNS fallback */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    DNS Server (Fallback)
+                                    <span className="text-[9px] font-normal text-neutral-600 normal-case tracking-normal">— dicoba jika primer timeout</span>
+                                </label>
+                                <input
+                                    value={form.dns_server_secondary}
+                                    onChange={e => setForm(p => ({ ...p, dns_server_secondary: e.target.value }))}
+                                    placeholder="Contoh: 202.67.41.5 (opsional)"
+                                    className="w-full bg-neutral-950 border border-blue-500/20 text-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-mono opacity-80"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {form.check_method === "APN" && (
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">DNS Server IP *</label>
+                            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">APN Host *</label>
                             <input
-                                value={form.dns_server}
-                                onChange={e => setForm(p => ({ ...p, dns_server: e.target.value }))}
-                                placeholder="Contoh: 118.98.44.10"
-                                className="w-full bg-neutral-950 border border-blue-500/30 text-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-mono"
+                                value={form.apn_host}
+                                onChange={e => setForm(p => ({ ...p, apn_host: e.target.value }))}
+                                placeholder="Contoh: internet atau gprs.telkomsel.com"
+                                className="w-full bg-neutral-950 border border-violet-500/30 text-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 font-mono"
                             />
-                            {/* DNS Presets quick pick */}
+                            {/* APN Presets quick pick */}
                             <div className="flex flex-wrap gap-1.5">
-                                {Object.entries(DNS_PRESETS).map(([isp, ip]) => (
+                                {Object.entries(APN_PRESETS).map(([isp, apn]) => (
                                     <button key={isp} type="button"
-                                        onClick={() => setForm(p => ({ ...p, dns_server: ip }))}
-                                        className="text-[10px] px-2 py-0.5 rounded border border-neutral-700 text-neutral-400 hover:border-blue-500/40 hover:text-blue-400 transition-colors font-mono"
-                                    >{isp}: {ip}</button>
+                                        onClick={() => setForm(p => ({ ...p, apn_host: apn }))}
+                                        className="text-[10px] px-2 py-0.5 rounded border border-neutral-700 text-neutral-400 hover:border-violet-500/40 hover:text-violet-400 transition-colors font-mono"
+                                    >{isp}: {apn}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {form.check_method === "MMSC" && (
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">MMSC URL *</label>
+                            <input
+                                value={form.mmsc_url}
+                                onChange={e => setForm(p => ({ ...p, mmsc_url: e.target.value }))}
+                                placeholder="Contoh: http://mms.telkomsel.com"
+                                className="w-full bg-neutral-950 border border-amber-500/30 text-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 font-mono"
+                            />
+                            {/* MMSC Presets quick pick */}
+                            <div className="flex flex-wrap gap-1.5">
+                                {Object.entries(MMSC_PRESETS).map(([isp, url]) => (
+                                    <button key={isp} type="button"
+                                        onClick={() => setForm(p => ({ ...p, mmsc_url: url }))}
+                                        className="text-[10px] px-2 py-0.5 rounded border border-neutral-700 text-neutral-400 hover:border-amber-500/40 hover:text-amber-400 transition-colors font-mono"
+                                    >{isp}</button>
                                 ))}
                             </div>
                         </div>

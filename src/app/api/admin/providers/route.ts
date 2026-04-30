@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { key, name, is_active, proxy_url, dns_server, check_method } = body;
+        const { key, name, is_active, proxy_url, dns_server, dns_server_secondary, check_method, apn_host, mmsc_url } = body;
 
         if (!key || !name) {
             return NextResponse.json({ error: "Key dan Name wajib diisi" }, { status: 400 });
@@ -52,6 +52,9 @@ export async function PUT(req: NextRequest) {
             formattedUrl = "http://" + formattedUrl;
         }
 
+        const validMethods = ["HTTP", "DNS", "APN", "MMSC", "INDIWTF"];
+        const resolvedMethod = validMethods.includes(check_method) ? check_method : "HTTP";
+
         const prisma = getPrisma();
 
         const existing = await prisma.provider.findUnique({ where: { key: cleanKey } });
@@ -66,7 +69,10 @@ export async function PUT(req: NextRequest) {
                 is_active: is_active !== undefined ? Boolean(is_active) : true,
                 proxy_url: formattedUrl ?? null,
                 dns_server: dns_server ? dns_server.trim() : null,
-                check_method: check_method === "DNS" ? "DNS" : "HTTP",
+                check_method: resolvedMethod,
+                apn_host: apn_host ? apn_host.trim() : null,
+                mmsc_url: mmsc_url ? mmsc_url.trim() : null,
+                dns_server_secondary: dns_server_secondary ? dns_server_secondary.trim() : null,
             }
         });
 
@@ -90,7 +96,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { key, proxy_url, is_active, dns_server, check_method } = body;
+        const { key, proxy_url, is_active, dns_server, dns_server_secondary, check_method, apn_host, mmsc_url } = body;
 
         if (!key) {
             return NextResponse.json({ error: "Missing provider key" }, { status: 400 });
@@ -106,12 +112,16 @@ export async function POST(req: NextRequest) {
             formattedUrl = "http://" + formattedUrl;
         }
 
+        const validMethods = ["HTTP", "DNS", "APN", "MMSC"];
         const prisma = getPrisma();
         const data: any = {};
         if (formattedUrl !== undefined) data.proxy_url = formattedUrl;
         if (is_active !== undefined) data.is_active = Boolean(is_active);
         if (dns_server !== undefined) data.dns_server = dns_server ? dns_server.trim() : null;
-        if (check_method !== undefined) data.check_method = check_method === "DNS" ? "DNS" : "HTTP";
+        if (check_method !== undefined) data.check_method = validMethods.includes(check_method) ? check_method : "HTTP";
+        if (apn_host !== undefined) data.apn_host = apn_host ? apn_host.trim() : null;
+        if (mmsc_url !== undefined) data.mmsc_url = mmsc_url ? mmsc_url.trim() : null;
+        if (dns_server_secondary !== undefined) data.dns_server_secondary = dns_server_secondary ? dns_server_secondary.trim() : null;
 
         await prisma.provider.update({ where: { key }, data });
 

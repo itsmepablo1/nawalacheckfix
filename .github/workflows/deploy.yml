@@ -1,0 +1,48 @@
+name: 🚀 Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:   # bisa trigger manual dari GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy ke VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key:      ${{ secrets.VPS_SSH_KEY }}
+          port:     ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "📂 Masuk ke direktori project..."
+            cd ${{ secrets.VPS_APP_DIR }}
+
+            echo "⬇️ Pull kode terbaru dari GitHub..."
+            git pull origin main
+
+            echo "🐳 Build ulang dan restart container..."
+            INDIWTF_API_TOKEN=${{ secrets.INDIWTF_API_TOKEN }} \
+            docker compose up -d --build --remove-orphans
+
+            echo "⏳ Tunggu database siap (10 detik)..."
+            sleep 10
+
+            echo "🗄️ Jalankan migrasi database..."
+            docker compose exec -T web npx prisma db push --schema prisma/schema.prisma
+
+            echo "🧹 Bersihkan image lama..."
+            docker image prune -f
+
+            echo "✅ Deploy selesai!"
+            docker compose ps
