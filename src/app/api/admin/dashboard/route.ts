@@ -18,13 +18,16 @@ export async function GET() {
             where: { checked_at: { gte: startOfDay } }
         });
 
-        // Get currently blocked domains (unique domains that have a BLOCKIR status in their latest check per provider)
-        // A simpler metric: Total number of blocked records today, or just domains that have at least one block
-        const currentlyBlockedCount = await prisma.checkResult.count({
+        // Unique domains yang SAAT INI terblokir (minimal 1 provider menunjukkan BLOCKIR dalam 24 jam)
+        const blockedDomainRows = await prisma.checkResult.findMany({
             where: {
-                status: { in: ["BLOCKIR", "TIMEOUT", "REDIRECT"] } // Consider these as blocked indicating issues
-            }
+                status: "BLOCKIR",
+                checked_at: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            },
+            select: { domain_id: true },
+            distinct: ["domain_id"],
         });
+        const currentlyBlockedCount = blockedDomainRows.length;
 
         // Get Domains with their recent checks for the domain status table
         const domainsList = await prisma.domain.findMany({
