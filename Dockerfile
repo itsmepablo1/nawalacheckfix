@@ -18,7 +18,8 @@ COPY . .
 # Generate prisma client
 RUN npx prisma generate
 
-# Next.js build
+# Next.js build — limit heap agar tidak OOM di VPS RAM kecil
+ENV NODE_OPTIONS="--max-old-space-size=512"
 RUN npm run build
 
 # Production image, copy all the files and run next
