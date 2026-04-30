@@ -72,12 +72,16 @@ export async function sendDomainCentricReport(checkedAt: Date): Promise<string> 
     const timeStr = formatWIBFull(checkedAt);
 
     // send_on_change_only check
-    if (settings.send_on_change_only) {
+    // Hanya berlaku saat ada domain terblokir — laporan "semua aman" selalu dikirim.
+    if (settings.send_on_change_only && blockedDomains.length > 0) {
         const hash = crypto.createHash("md5")
             .update(blockedDomains.map(d => d.domain).sort().join(","))
             .digest("hex");
         const log = await prisma.telegramReportsLog.findUnique({ where: { provider_key: "_GLOBAL_" } });
-        if (log && log.last_hash_per_provider === hash) return "No change";
+        if (log && log.last_hash_per_provider === hash) {
+            console.log("[Telegram] send_on_change_only: no change, skipping.");
+            return "No change";
+        }
         await prisma.telegramReportsLog.upsert({
             where:  { provider_key: "_GLOBAL_" },
             update: { last_hash_per_provider: hash, last_sent_at: new Date() },
