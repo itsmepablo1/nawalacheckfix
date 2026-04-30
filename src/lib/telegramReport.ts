@@ -1,5 +1,133 @@
 import { getPrisma } from "./prisma";
 import { sendTelegramMessage } from "./telegram";
+import crypto from "crypto";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers shared by trigger route + telegramWorker
+// ─────────────────────────────────────────────────────────────────────────────
+
+function formatWIBFull(date: Date): string {
+    const wib = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+    const day   = String(wib.getUTCDate()).padStart(2, "0");
+    const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+    const month = months[wib.getUTCMonth()];
+    const year  = wib.getUTCFullYear();
+    const hh    = String(wib.getUTCHours()).padStart(2, "0");
+    const mm    = String(wib.getUTCMinutes()).padStart(2, "0");
+    return `${day} ${month} ${year} — ${hh}:${mm} WIB`;
+}
+
+function statusDot(status: string): string {
+    if (status === "BLOCKIR")  return "🔴";
+    if (status === "AMAN")     return "🟢";
+    if (status === "REDIRECT") return "🟡";
+    return "⚫";
+}
+
+/**
+ * Baca DB → bangun pesan domain-centric → kirim ke semua destination Telegram.
+ * Format baru: 1 pesan per siklus check, per-domain dengan breakdown semua provider.
+ */
+export async function sendDomainCentricReport(checkedAt: Date): Promise<string> {
+    const prisma = getPrisma();
+
+    const settings = await prisma.telegramSettings.findFirst();
+    if (!settings || !settings.enabled) return "Telegram disabled";
+
+    const destinations: string[] = settings.destinations
+        ? JSON.parse(settings.destinations)
+        : [];
+    if (destinations.length === 0) return "No destinations";
+
+    const providers = await prisma.provider.findMany({
+        where: { is_active: true },
+        orderBy: { name: "asc" },
+    });
+
+    const domains = await prisma.domain.findMany({
+        where: { is_active: true },
+        orderBy: { domain: "asc" },
+    });
+
+    // Per domain → per provider → latest status
+    type ProviderResult = { provider_name: string; status: string };
+    type DomainRow = { domain: string; results: ProviderResult[]; hasBlock: boolean };
+
+    const domainRows: DomainRow[] = [];
+
+    for (const domain of domains) {
+        const results: ProviderResult[] = [];
+        for (const provider of providers) {
+            const latest = await prisma.checkResult.findFirst({
+                where: { domain_id: domain.id, provider_key: provider.key },
+                orderBy: { checked_at: "desc" },
+            });
+            results.push({ provider_name: provider.name, status: latest?.status ?? "UNKNOWN" });
+        }
+        const hasBlock = results.some(r => r.status === "BLOCKIR");
+        domainRows.push({ domain: domain.domain, results, hasBlock });
+    }
+
+    const blockedDomains = domainRows.filter(d => d.hasBlock);
+    const timeStr = formatWIBFull(checkedAt);
+
+    // send_on_change_only check
+    if (settings.send_on_change_only) {
+        const hash = crypto.createHash("md5")
+            .update(blockedDomains.map(d => d.domain).sort().join(","))
+            .digest("hex");
+        const log = await prisma.telegramReportsLog.findUnique({ where: { provider_key: "_GLOBAL_" } });
+        if (log && log.last_hash_per_provider === hash) return "No change";
+        await prisma.telegramReportsLog.upsert({
+            where:  { provider_key: "_GLOBAL_" },
+            update: { last_hash_per_provider: hash, last_sent_at: new Date() },
+            create: { provider_key: "_GLOBAL_", last_hash_per_provider: hash, last_sent_at: new Date() },
+        });
+    }
+
+    // Build pesan
+    let message: string;
+
+    if (blockedDomains.length === 0) {
+        message = [
+            `🛡️ <b>NAWALA CHECK REPORT</b>`,
+            `📅 ${timeStr}`,
+            ``,
+            `✅ <b>TIDAK ADA YANG TERBLOKIR</b>`,
+            `Semua ${domains.length} domain aman di semua provider.`,
+        ].join("\n");
+    } else {
+        const lines: string[] = [
+            `🛡️ <b>NAWALA CHECK REPORT</b>`,
+            `📅 ${timeStr}`,
+            ``,
+            `⚠️ <b>${blockedDomains.length} domain terblokir</b> dari ${domains.length} domain terdaftar`,
+            ``,
+        ];
+        for (const dr of blockedDomains) {
+            lines.push(`🔴 <b>${dr.domain}</b>`);
+            lines.push(`<b>PROVIDER TERBLOKIR :</b>`);
+            for (const r of dr.results) {
+                lines.push(`${statusDot(r.status)} ${r.provider_name.toUpperCase()} — ${r.status}`);
+            }
+            lines.push(``);
+        }
+        message = lines.join("\n").trim();
+    }
+
+    // Kirim ke semua destination
+    let sent = 0;
+    for (const dest of destinations) {
+        try {
+            await sendTelegramMessage(dest, message);
+            sent++;
+        } catch (err) {
+            console.error(`[Telegram] Failed to send to ${dest}:`, err);
+        }
+    }
+
+    return `Sent to ${sent} destinations. Blocked domains: ${blockedDomains.length}`;
+}
 
 type DomainResult = {
     domain: string;

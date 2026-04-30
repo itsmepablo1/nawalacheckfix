@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { checkDomain } from "@/lib/checker";
 import { getSession } from "@/lib/auth";
-import { sendCheckReport } from "@/lib/telegramReport";
+import { sendDomainCentricReport } from "@/lib/telegramReport";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,15 +28,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, message: "Tidak ada provider aktif untuk dicek." });
         }
 
-        const timestamp = new Date();
-        let completed = 0;
-        let errors = 0;
-        const BATCH_SIZE = 10;
-
-        // Collect results per provider for Telegram report
-        // Map: providerKey → array of domain results
-        const providerResults: Map<string, Array<{ domain: string; status: any; latency_ms: number | null }>> = new Map();
-        for (const p of providers) providerResults.set(p.key, []);
+        const timestamp   = new Date();
+        let completed     = 0;
+        let errors        = 0;
+        const BATCH_SIZE  = 10;
+        const indiwtfToken = process.env.INDIWTF_API_TOKEN ?? undefined;
 
         const jobs: Array<() => Promise<void>> = [];
 
@@ -46,9 +42,14 @@ export async function POST(req: NextRequest) {
                     try {
                         const result = await checkDomain(
                             domain.domain,
-                            (provider.check_method as "HTTP" | "DNS") || "HTTP",
+                            (provider.check_method as any) || "HTTP",
                             provider.proxy_url,
-                            provider.dns_server
+                            provider.dns_server,
+                            undefined,                              // default timeout
+                            (provider as any).apn_host ?? null,
+                            (provider as any).mmsc_url ?? null,
+                            (provider as any).dns_server_secondary ?? null,
+                            indiwtfToken,
                         );
 
                         await prisma.checkResult.create({
@@ -62,13 +63,6 @@ export async function POST(req: NextRequest) {
                                 error_code:   result.error_code,
                                 checked_at:   timestamp,
                             },
-                        });
-
-                        // Collect for Telegram
-                        providerResults.get(provider.key)?.push({
-                            domain:     domain.domain,
-                            status:     result.status,
-                            latency_ms: result.latency_ms,
                         });
 
                         completed++;
@@ -97,21 +91,11 @@ export async function POST(req: NextRequest) {
             )
         );
 
-        // Send Telegram reports (fire-and-forget style, don't block response)
-        const telegramReports = providers.map(p => ({
-            providerName: p.name,
-            providerKey:  p.key,
-            checkMethod:  p.check_method || "HTTP",
-            dnsServer:    p.dns_server,
-            results:      providerResults.get(p.key) || [],
-            checkedAt:    timestamp,
-        }));
-
-        // Run Telegram send async (don't await — don't block the API response)
-        sendCheckReport(telegramReports).then(({ sent, skipped }) => {
-            console.log(`[Telegram] Sent ${sent} report(s), skipped ${skipped}.`);
+        // Kirim laporan Telegram dengan format baru (domain-centric, async)
+        sendDomainCentricReport(timestamp).then(result => {
+            console.log(`[Telegram] Report result: ${result}`);
         }).catch(err => {
-            console.error("[Telegram] Report send error:", err);
+            console.error("[Telegram] Report error:", err);
         });
 
         return NextResponse.json({
