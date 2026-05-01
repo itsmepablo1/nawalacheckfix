@@ -40,8 +40,11 @@ export async function POST(request: NextRequest) {
         });
 
         return response;
-    } catch (error) {
-        console.error("Login route error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    } catch (error: any) {
+        console.error("[LOGIN ERROR]", error?.message, error?.code, JSON.stringify(error));
+        return NextResponse.json({
+            error: "Internal Server Error",
+            detail: process.env.NODE_ENV !== "production" ? error?.message : undefined
+        }, { status: 500 });
     }
 }
