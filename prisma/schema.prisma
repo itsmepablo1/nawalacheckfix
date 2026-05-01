@@ -68,14 +68,15 @@ model CheckResult {
 }
 
 model TelegramSettings {
-  id                  String  @id @default(cuid())
-  bot_token_encrypted String?
-  destinations        String? // JSON array of chat ids like ["-10012345678", "987654321"]
-  webhook_url         String?
-  mode                String  @default("blocked_only") // blocked_only, full
-  send_on_change_only Boolean @default(true)
-  enabled             Boolean @default(false)
-  auto_check          Boolean @default(false)
+  id                    String  @id @default(cuid())
+  bot_token_encrypted   String?
+  destinations          String? // JSON array of chat ids like ["-10012345678", "987654321"]
+  webhook_url           String?
+  mode                  String  @default("blocked_only") // blocked_only, full
+  send_on_change_only   Boolean @default(true)
+  enabled               Boolean @default(false)
+  auto_check            Boolean @default(false)
+  check_interval_minutes Int    @default(5) // interval auto-check dalam menit
 }
 
 model TelegramReportsLog {

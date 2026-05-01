@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
                     send_on_change_only: data.send_on_change_only,
                     enabled: data.enabled,
                     auto_check: data.auto_check,
+                    check_interval_minutes: data.check_interval_minutes ?? 5,
                 },
             });
             return NextResponse.json(updated);
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
                     send_on_change_only: data.send_on_change_only ?? true,
                     enabled: data.enabled ?? false,
                     auto_check: data.auto_check ?? false,
+                    check_interval_minutes: data.check_interval_minutes ?? 5,
                 },
             });
             return NextResponse.json(created);

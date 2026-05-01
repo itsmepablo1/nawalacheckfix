@@ -11,6 +11,7 @@ type TelegramSettings = {
     send_on_change_only?: boolean;
     enabled?: boolean;
     auto_check?: boolean;
+    check_interval_minutes?: number;
 };
 
 export default function TelegramSettingsPage() {
@@ -22,6 +23,7 @@ export default function TelegramSettingsPage() {
         send_on_change_only: true,
         enabled: false,
         auto_check: false,
+        check_interval_minutes: 5,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -126,26 +128,53 @@ export default function TelegramSettingsPage() {
                     </label>
                 </div>
 
-                {/* Auto Check Switch */}
-                <div className="glass-card p-6 flex items-center justify-between border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.05)]">
-                    <div className="flex items-center">
-                        <div className={`p-3 rounded-xl mr-4 ${settings.auto_check ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-800 text-neutral-500'}`}>
-                            <RefreshCw className="w-6 h-6" />
+                {/* Auto Check Switch + Interval */}
+                <div className="glass-card p-6 border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.05)] space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            <div className={`p-3 rounded-xl mr-4 ${settings.auto_check ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-800 text-neutral-500'}`}>
+                                <RefreshCw className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white mb-1">
+                                    Auto-Run Checks
+                                    {settings.auto_check && (
+                                        <span className="ml-2 text-sm font-normal text-blue-400">
+                                            (setiap {settings.check_interval_minutes || 5} menit)
+                                        </span>
+                                    )}
+                                </h3>
+                                <p className="text-sm text-neutral-400">Jalankan pengecekan semua domain secara otomatis sesuai interval.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-white mb-1">Auto-Run Checks (Every 5 Mins)</h3>
-                            <p className="text-sm text-neutral-400">If enabled, the background worker will continuously scan all domains every 5 minutes.</p>
-                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={settings.auto_check}
+                                onChange={(e) => setSettings({ ...settings, auto_check: e.target.checked })}
+                            />
+                            <div className="w-14 h-7 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
+                        </label>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={settings.auto_check}
-                            onChange={(e) => setSettings({ ...settings, auto_check: e.target.checked })}
-                        />
-                        <div className="w-14 h-7 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
-                    </label>
+
+                    {/* Interval input — tampil saat auto_check aktif */}
+                    {settings.auto_check && (
+                        <div className="flex items-center gap-4 bg-neutral-900/60 rounded-xl px-5 py-4 border border-blue-500/20">
+                            <RefreshCw className="w-4 h-4 text-blue-400 shrink-0" />
+                            <label className="text-sm text-neutral-300 whitespace-nowrap">Interval Auto-Check</label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={1440}
+                                className="w-24 bg-neutral-800 border border-neutral-700 rounded-lg py-2 px-3 text-white text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                                value={settings.check_interval_minutes ?? 5}
+                                onChange={(e) => setSettings({ ...settings, check_interval_minutes: Math.max(1, parseInt(e.target.value) || 5) })}
+                            />
+                            <span className="text-sm text-neutral-400">menit</span>
+                            <p className="text-xs text-neutral-500 ml-auto">Min: 1 menit · Max: 1440 menit (24 jam)</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Main Configuration Grid */}
