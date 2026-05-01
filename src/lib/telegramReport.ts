@@ -78,11 +78,7 @@ export async function sendDomainCentricReport(checkedAt: Date): Promise<string> 
     let message: string;
 
     if (blockedDomains.length === 0) {
-        message = [
-            `📅 ${timeStr}`,
-            ``,
-            `<tg-spoiler>✅ TIDAK ADA DOMAIN YANG TERBLOKIR BOSKU</tg-spoiler>`,
-        ].join("\n");
+        message = `📅 ${timeStr}\n\n✅ TIDAK ADA DOMAIN YANG TERBLOKIR BOSKU`;
 
     } else {
         const lines: string[] = [
