@@ -1,8 +1,9 @@
 import { Worker, Job } from "bullmq";
-import { CHECKER_QUEUE_NAME, telegramQueue } from "../lib/queue";
+import { CHECKER_QUEUE_NAME } from "../lib/queue";
 import { redis } from "../lib/redis";
 import { getPrisma } from "../lib/prisma";
 import { checkDomain } from "../lib/checker";
+import { sendDomainCentricReport } from "../lib/telegramReport";
 
 const LOCK_KEY = "nawala:check:running";
 const LOCK_TTL = 300; // 5 menit max
@@ -91,12 +92,13 @@ export async function runAllChecks(source: "auto" | "manual"): Promise<string> {
             )
         );
 
-        // Queue telegram report (delayed 5s agar DB commit selesai)
-        await telegramQueue.add(
-            "generate-report",
-            { check_timestamp: timestamp.toISOString() },
-            { delay: 5000 }
-        );
+        // Kirim Telegram report LANGSUNG — tidak lewat queue agar pasti terkirim
+        try {
+            const reportResult = await sendDomainCentricReport(timestamp);
+            console.log(`[Telegram] ${reportResult}`);
+        } catch (err) {
+            console.error("[Telegram] Report error:", err);
+        }
 
         console.log(`[Checker] Done (${source}): ${completed} ok, ${errors} err`);
         return `${completed} checks done, ${errors} errors`;
