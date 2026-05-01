@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
             name: "session",
             value: token,
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: false, // false = support HTTP (VPS tanpa SSL). Aktifkan jika pakai HTTPS.
             path: "/",
             maxAge: 60 * 60 * 24, // 24 jam
         });
