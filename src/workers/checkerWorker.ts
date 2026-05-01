@@ -4,6 +4,9 @@ import { redis } from "../lib/redis";
 import { getPrisma } from "../lib/prisma";
 import { checkDomain } from "../lib/checker";
 
+const LOCK_KEY = "nawala:check:running";
+const LOCK_TTL = 120; // detik
+
 export const checkerWorker = new Worker(
     CHECKER_QUEUE_NAME,
     async (job: Job) => {
@@ -20,6 +23,13 @@ export const checkerWorker = new Worker(
             }
 
             console.log("[Checker] Dispatching all domains for check. Manual:", !!isManual);
+
+            // ── Lock agar tidak overlap dengan manual trigger ────────────────
+            const lockAcquired = await (redis as any).set(LOCK_KEY, "1", "EX", LOCK_TTL, "NX");
+            if (!lockAcquired) {
+                console.log("[Checker] Auto-check skipped — manual check sedang berjalan.");
+                return "Skipped: lock held by manual run";
+            }
 
             const domains = await prisma.domain.findMany({ where: { is_active: true } });
             const providers = await prisma.provider.findMany({ where: { is_active: true } });
@@ -67,6 +77,9 @@ export const checkerWorker = new Worker(
             // that runs after a delay, or using BullMQ flows.
             // For this demo, let's just queue the telegram reporter to run after 30 seconds
             await telegramQueue.add("generate-report", { check_timestamp: timestamp.toISOString() }, { delay: 30000 });
+
+            // Release lock — jobs sudah di-queue, worker individual akan menyelesaikannya
+            await redis.del(LOCK_KEY);
 
             return `Dispatched ${jobs.length} checks`;
         }
