@@ -9,19 +9,8 @@ export async function POST(request: NextRequest) {
     try {
         const { username, password } = await request.json();
 
-        // ── DEV BYPASS ── hardcoded admin account for local development
-        if (username === "admin" && password === "admin123") {
-            const token = await encrypt({ id: 1, username: "admin", role: "MASTER" });
-            const response = NextResponse.json({ success: true, role: "MASTER" });
-            response.cookies.set({
-                name: "session",
-                value: token,
-                httpOnly: true,
-                secure: false,
-                path: "/",
-                maxAge: 60 * 60 * 24,
-            });
-            return response;
+        if (!username || !password) {
+            return NextResponse.json({ error: "Username dan password wajib diisi." }, { status: 400 });
         }
 
         const prisma = getPrisma();
@@ -47,7 +36,7 @@ export async function POST(request: NextRequest) {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             path: "/",
-            maxAge: 60 * 60 * 24, // 24 hours
+            maxAge: 60 * 60 * 24, // 24 jam
         });
 
         return response;
