@@ -79,12 +79,11 @@ export async function sendDomainCentricReport(checkedAt: Date): Promise<string> 
 
     if (blockedDomains.length === 0) {
         message = [
-            `🛡️ <b>NAWALA CHECK REPORT</b>`,
             `📅 ${timeStr}`,
             ``,
-            `✅ <b>TIDAK ADA YANG TERBLOKIR</b>`,
-            `Semua ${domains.length} domain aman di semua provider.`,
+            `<tg-spoiler>✅ TIDAK ADA DOMAIN YANG TERBLOKIR BOSKU</tg-spoiler>`,
         ].join("\n");
+
     } else {
         const lines: string[] = [
             `🛡️ <b>NAWALA CHECK REPORT</b>`,
