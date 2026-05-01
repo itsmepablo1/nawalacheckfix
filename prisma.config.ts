@@ -1,8 +1,8 @@
 // @ts-nocheck
 /* eslint-disable */
 /**
- * prisma.config.ts — Prisma 7 adapter config untuk CLI commands (db push, migrate)
- * Dibutuhkan karena Prisma 7 tidak support `url` di schema.prisma lagi.
+ * prisma.config.ts — Prisma 7 config untuk CLI (db push, migrate)
+ * datasource.url wajib ada di sini (bukan di schema.prisma)
  */
 import path from "node:path";
 import { defineConfig } from "prisma/config";
@@ -11,12 +11,7 @@ import { Pool } from "pg";
 
 export default defineConfig({
     schema: path.join("prisma", "schema.prisma"),
-    migrate: {
-        async adapter(env) {
-            const pool = new Pool({
-                connectionString: env.DATABASE_URL,
-            });
-            return new PrismaPg(pool);
-        },
+    datasource: {
+        url: process.env.DATABASE_URL!,
     },
 });
