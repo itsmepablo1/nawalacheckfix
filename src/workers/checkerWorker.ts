@@ -1,12 +1,113 @@
 import { Worker, Job } from "bullmq";
-import { CHECKER_QUEUE_NAME, checkerQueue, telegramQueue } from "../lib/queue";
+import { CHECKER_QUEUE_NAME, telegramQueue } from "../lib/queue";
 import { redis } from "../lib/redis";
 import { getPrisma } from "../lib/prisma";
 import { checkDomain } from "../lib/checker";
 
 const LOCK_KEY = "nawala:check:running";
-const LOCK_TTL = 120; // detik
+const LOCK_TTL = 300; // 5 menit max
 
+// ── Shared check runner — dipakai oleh auto-check & manual trigger ────────────
+export async function runAllChecks(source: "auto" | "manual"): Promise<string> {
+    const prisma = getPrisma();
+    const indiwtfToken = process.env.INDIWTF_API_TOKEN ?? undefined;
+
+    // Acquire lock
+    const lockAcquired = await (redis as any).set(LOCK_KEY, source, "EX", LOCK_TTL, "NX");
+    if (!lockAcquired) {
+        const holder = await redis.get(LOCK_KEY);
+        console.log(`[Checker] Skipped (${source}) — lock held by: ${holder}`);
+        return `Skipped: lock held by ${holder}`;
+    }
+
+    try {
+        const [domains, providers] = await Promise.all([
+            prisma.domain.findMany({ where: { is_active: true } }),
+            prisma.provider.findMany({ where: { is_active: true } }),
+        ]);
+
+        if (domains.length === 0 || providers.length === 0) {
+            return "No active domains/providers";
+        }
+
+        // Satu timestamp untuk seluruh sesi — penting agar hasil tidak tercampur
+        const timestamp  = new Date();
+        const BATCH_SIZE = 5;
+        let completed    = 0;
+        let errors       = 0;
+
+        const tasks: Array<() => Promise<void>> = [];
+
+        for (const provider of providers) {
+            for (const domain of domains) {
+                tasks.push(async () => {
+                    try {
+                        const result = await checkDomain(
+                            domain.domain,
+                            (provider.check_method as any) || "HTTP",
+                            provider.proxy_url,
+                            provider.dns_server,
+                            undefined,
+                            (provider as any).apn_host ?? null,
+                            (provider as any).mmsc_url ?? null,
+                            (provider as any).dns_server_secondary ?? null,
+                            indiwtfToken,
+                        );
+
+                        await prisma.checkResult.create({
+                            data: {
+                                domain_id:    domain.id,
+                                provider_key: provider.key,
+                                status:       result.status,
+                                http_status:  result.http_status,
+                                final_url:    result.final_url,
+                                latency_ms:   result.latency_ms,
+                                error_code:   result.error_code,
+                                checked_at:   timestamp, // SAMA untuk semua dalam satu sesi
+                            },
+                        });
+                        completed++;
+                    } catch (err: any) {
+                        console.error(`[Checker] ${domain.domain}/${provider.key}: ${err.message}`);
+                        errors++;
+                    }
+                });
+            }
+        }
+
+        // Run berurutan per batch — selesai semua SEBELUM lock dilepas
+        for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+            await Promise.allSettled(tasks.slice(i, i + BATCH_SIZE).map(fn => fn()));
+        }
+
+        // Update heartbeat
+        await Promise.allSettled(
+            providers.map(p =>
+                prisma.providerHeartbeat.upsert({
+                    where:  { provider_id: p.id },
+                    update: { status: "RUNNING", last_seen: timestamp },
+                    create: { provider_id: p.id, status: "RUNNING", last_seen: timestamp },
+                })
+            )
+        );
+
+        // Queue telegram report (delayed 5s agar DB commit selesai)
+        await telegramQueue.add(
+            "generate-report",
+            { check_timestamp: timestamp.toISOString() },
+            { delay: 5000 }
+        );
+
+        console.log(`[Checker] Done (${source}): ${completed} ok, ${errors} err`);
+        return `${completed} checks done, ${errors} errors`;
+
+    } finally {
+        // SELALU lepas lock setelah semua check selesai
+        await redis.del(LOCK_KEY);
+    }
+}
+
+// ── BullMQ Worker — hanya untuk auto-check terjadwal ─────────────────────────
 export const checkerWorker = new Worker(
     CHECKER_QUEUE_NAME,
     async (job: Job) => {
@@ -16,114 +117,16 @@ export const checkerWorker = new Worker(
 
             if (!isManual) {
                 const settings = await prisma.telegramSettings.findFirst();
-                if (!settings || !settings.auto_check) {
-                    // console.log("[Checker] Auto-check is disabled. Skipping scheduled run.");
-                    return "Auto-check disabled";
-                }
+                if (!settings || !settings.auto_check) return "Auto-check disabled";
             }
 
-            console.log("[Checker] Dispatching all domains for check. Manual:", !!isManual);
-
-            // ── Lock agar tidak overlap dengan manual trigger ────────────────
-            const lockAcquired = await (redis as any).set(LOCK_KEY, "1", "EX", LOCK_TTL, "NX");
-            if (!lockAcquired) {
-                console.log("[Checker] Auto-check skipped — manual check sedang berjalan.");
-                return "Skipped: lock held by manual run";
-            }
-
-            const domains = await prisma.domain.findMany({ where: { is_active: true } });
-            const providers = await prisma.provider.findMany({ where: { is_active: true } });
-
-            if (domains.length === 0 || providers.length === 0) {
-                console.log("[Checker] No active domains or providers to check.");
-                return;
-            }
-
-            // We group checks by provider or just dispatch individual jobs
-            const jobs = [];
-            const timestamp = new Date();
-
-            for (const provider of providers) {
-                for (const domain of domains) {
-                    jobs.push({
-                        name: "check-domain",
-                        data: {
-                            domain_id: domain.id,
-                            domain_name: domain.domain,
-                            provider_key: provider.key,
-                            check_method: provider.check_method || "HTTP",
-                            proxy_url: provider.proxy_url,
-                            dns_server: provider.dns_server,
-                            dns_server_secondary: (provider as any).dns_server_secondary ?? null,
-                            apn_host: (provider as any).apn_host ?? null,
-                            mmsc_url: (provider as any).mmsc_url ?? null,
-                            indiwtf_token: process.env.INDIWTF_API_TOKEN ?? null,
-                            timestamp: timestamp.toISOString()
-                        }
-                    });
-                }
-            }
-
-            // Enqueue all individual checks
-            // In a real high-throughput system you'd use addBulk
-            for (const j of jobs) {
-                await checkerWorker.rateLimit(10); // Simple concurrency control
-                await checkerQueue.add(j.name, j.data, { removeOnComplete: true, removeOnFail: true });
-            }
-
-            // Once all are dispatched, we could wait, but for simplicity
-            // we'll dispatch a delayed report job, or a "check-completed" job 
-            // when the queue drains. A simple approach is adding a report job at the end
-            // that runs after a delay, or using BullMQ flows.
-            // For this demo, let's just queue the telegram reporter to run after 30 seconds
-            await telegramQueue.add("generate-report", { check_timestamp: timestamp.toISOString() }, { delay: 30000 });
-
-            // Release lock — jobs sudah di-queue, worker individual akan menyelesaikannya
-            await redis.del(LOCK_KEY);
-
-            return `Dispatched ${jobs.length} checks`;
-        }
-
-        if (job.name === "check-domain") {
-            const { domain_id, domain_name, provider_key, check_method, proxy_url, dns_server, dns_server_secondary, apn_host, mmsc_url, indiwtf_token, timestamp } = job.data;
-
-            const result = await checkDomain(
-                domain_name,
-                check_method || "HTTP",
-                proxy_url,
-                dns_server,
-                undefined, // use default timeout
-                apn_host,
-                mmsc_url,
-                dns_server_secondary,
-                indiwtf_token ?? process.env.INDIWTF_API_TOKEN,
-            );
-
-            // Save to DB
-            const prisma = getPrisma();
-            await prisma.checkResult.create({
-                data: {
-                    domain_id,
-                    provider_key,
-                    status: result.status,
-                    http_status: result.http_status,
-                    final_url: result.final_url,
-                    latency_ms: result.latency_ms,
-                    error_code: result.error_code,
-                    checked_at: new Date(timestamp)
-                }
-            });
-
-            return result.status;
+            console.log("[Checker] dispatch-all triggered. Manual:", !!isManual);
+            return await runAllChecks(isManual ? "manual" : "auto");
         }
     },
-    { connection: redis as any, concurrency: 5 }
+    { connection: redis as any, concurrency: 1 } // concurrency 1 — tidak paralel
 );
 
-checkerWorker.on("completed", (job) => {
-    // console.log(`[Checker] Job ${job.id} completed!`);
-});
-
 checkerWorker.on("failed", (job, err) => {
-    console.error(`[Checker] Job ${job?.id} failed with ${err.message}`);
+    console.error(`[Checker] Job ${job?.id} failed: ${err.message}`);
 });
