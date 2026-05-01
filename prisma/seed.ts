@@ -1,7 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import argon2 from 'argon2'
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
+import argon2 from 'argon2';
 
-const prisma = new PrismaClient()
+// Prisma 7: wajib pakai adapter karena schema tidak punya url
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const PROVIDERS = [
     { key: "FIRSTMEDIA", name: "First Media" },
@@ -12,6 +17,7 @@ const PROVIDERS = [
     { key: "BIZNET", name: "Biznet Networks" },
     { key: "TELKOMSEL", name: "Telkomsel" },
     { key: "KOMINFO", name: "TrustPositif Kominfo" },
+    { key: "MYREPUBLIC", name: "MyRepublic" },
 ]
 
 async function main() {
@@ -50,7 +56,8 @@ async function main() {
                 webhook_url: "",
                 mode: "blocked_only",
                 send_on_change_only: true,
-                enabled: false
+                enabled: false,
+                check_interval_minutes: 5,
             }
         })
     }
@@ -61,9 +68,11 @@ async function main() {
 main()
     .then(async () => {
         await prisma.$disconnect()
+        await pool.end()
     })
     .catch(async (e) => {
         console.error(e)
         await prisma.$disconnect()
+        await pool.end()
         process.exit(1)
     })
