@@ -37,23 +37,54 @@ export async function runAllChecks(source: "auto" | "manual"): Promise<string> {
         let completed    = 0;
         let errors       = 0;
 
+        // ── Pre-fetch INDIWTF results ONCE per domain ─────────────────────────
+        // indiwtf checks from all ISPs in a single API call — no need to repeat
+        // per provider. Cache here to avoid N×M credit usage.
+        const indiwtfCache = new Map<string, Awaited<ReturnType<typeof checkDomain>>>();
+        const hasIndiwtfProvider = providers.some(p => (p as any).check_method === "INDIWTF");
+
+        if (hasIndiwtfProvider && indiwtfToken) {
+            const indiwtfBatch = domains.map(domain => async () => {
+                const result = await checkDomain(
+                    domain.domain,
+                    "INDIWTF",
+                    null, null, undefined, null, null, null,
+                    indiwtfToken,
+                );
+                indiwtfCache.set(domain.domain, result);
+            });
+
+            // Run pre-fetch in batches of 5 as well
+            for (let i = 0; i < indiwtfBatch.length; i += BATCH_SIZE) {
+                await Promise.allSettled(indiwtfBatch.slice(i, i + BATCH_SIZE).map(fn => fn()));
+            }
+            console.log(`[Checker] INDIWTF pre-fetch done: ${indiwtfCache.size} domains (1x each)`);
+        }
+
         const tasks: Array<() => Promise<void>> = [];
 
         for (const provider of providers) {
             for (const domain of domains) {
                 tasks.push(async () => {
                     try {
-                        const result = await checkDomain(
-                            domain.domain,
-                            (provider.check_method as any) || "HTTP",
-                            provider.proxy_url,
-                            provider.dns_server,
-                            undefined,
-                            (provider as any).apn_host ?? null,
-                            (provider as any).mmsc_url ?? null,
-                            (provider as any).dns_server_secondary ?? null,
-                            indiwtfToken,
-                        );
+                        let result: Awaited<ReturnType<typeof checkDomain>>;
+
+                        // Reuse cached INDIWTF result — do NOT call API again
+                        if ((provider as any).check_method === "INDIWTF" && indiwtfCache.has(domain.domain)) {
+                            result = indiwtfCache.get(domain.domain)!;
+                        } else {
+                            result = await checkDomain(
+                                domain.domain,
+                                (provider.check_method as any) || "HTTP",
+                                provider.proxy_url,
+                                provider.dns_server,
+                                undefined,
+                                (provider as any).apn_host ?? null,
+                                (provider as any).mmsc_url ?? null,
+                                (provider as any).dns_server_secondary ?? null,
+                                indiwtfToken,
+                            );
+                        }
 
                         await prisma.checkResult.create({
                             data: {
